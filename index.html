@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -7,115 +8,43 @@
 <title>QR Code Scanner</title>
 
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{
+ margin:0;padding:18px 14px;
+ background:#f5f6fb;color:#182033;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
 }
-
-body {
-  margin: 0;
-  padding: 18px 14px;
-  background: #f5f6fb;
-  color: #182033;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+main{max-width:600px;margin:auto}
+h1{font-size:25px;margin:4px 0 8px}
+.muted{color:#667085;font-size:14px;line-height:1.6}
+.card{
+ background:white;border:1px solid #e5e7ef;
+ border-radius:18px;padding:16px;margin:14px 0
 }
-
-main {
-  max-width: 600px;
-  margin: auto;
+button,.file{
+ border:0;border-radius:13px;padding:14px 12px;
+ font-size:16px;font-weight:650;text-align:center;cursor:pointer
 }
-
-h1 {
-  font-size: 25px;
-  margin: 4px 0 8px;
+.primary{background:#5145e5;color:white}
+.secondary,.file{background:#eeefff;color:#352bb7}
+.row{display:flex;gap:9px}
+.row>*{flex:1}
+button:disabled{opacity:.45}
+input[type=file]{display:none}
+video,canvas{
+ width:100%;border-radius:12px;
+ background:#111827;display:block
 }
-
-.muted {
-  color: #667085;
-  font-size: 14px;
-  line-height: 1.6;
+#preview{display:none}
+#camera{overflow:hidden;border-radius:12px;margin-top:12px}
+#status{font-size:14px;line-height:1.5;color:#5d687d}
+#result{
+ width:100%;min-height:120px;padding:14px;
+ border:1px solid #cfd5e2;border-radius:12px;
+ font-size:16px;line-height:1.5;overflow-wrap:anywhere;
+ margin:10px 0
 }
-
-.card {
-  background: white;
-  border: 1px solid #e5e7ef;
-  border-radius: 18px;
-  padding: 16px;
-  margin: 14px 0;
-}
-
-button, .file {
-  border: 0;
-  border-radius: 13px;
-  padding: 14px 12px;
-  font-size: 16px;
-  font-weight: 650;
-  text-align: center;
-  cursor: pointer;
-}
-
-.primary {
-  background: #5145e5;
-  color: white;
-}
-
-.secondary, .file {
-  background: #eeefff;
-  color: #352bb7;
-}
-
-.row {
-  display: flex;
-  gap: 9px;
-}
-
-.row > * {
-  flex: 1;
-}
-
-button:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
-input[type=file] {
-  display: none;
-}
-
-#reader {
-  width: 100%;
-  overflow: hidden;
-  border-radius: 12px;
-  margin-top: 12px;
-}
-
-#reader video {
-  border-radius: 12px;
-}
-
-#status {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #5d687d;
-  margin: 12px 0 0;
-}
-
-#result {
-  width: 100%;
-  min-height: 120px;
-  padding: 14px;
-  border: 1px solid #cfd5e2;
-  border-radius: 12px;
-  font-size: 16px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  margin: 10px 0;
-}
-
-.note {
-  font-size: 13px;
-  color: #667085;
-  line-height: 1.6;
-}
+.note{font-size:13px;color:#667085;line-height:1.6}
 </style>
 </head>
 
@@ -123,323 +52,278 @@ input[type=file] {
 <main>
 
 <h1>QR Code Scanner</h1>
-
 <div class="muted">
-สแกน QR Code เพื่ออ่านข้อมูลที่ซ่อนอยู่ภายใน
-รองรับการสแกนผ่านกล้องและรูปภาพจากเครื่อง
+สแกน QR Code ด้วยกล้อง ถ่ายภาพ หรือเลือกรูปจากเครื่อง
 </div>
 
 <section class="card">
 
-  <div class="row">
-    <button id="start" class="primary">
-      เปิดกล้องสแกน
-    </button>
+ <div id="camera">
+  <video id="video" autoplay playsinline muted></video>
+ </div>
 
-    <button id="stop" class="secondary" disabled>
-      หยุดกล้อง
-    </button>
-  </div>
+ <canvas id="canvas" hidden></canvas>
 
-  <div id="reader"></div>
+ <div class="row" style="margin-top:12px">
+  <button id="start" class="primary">เปิดกล้อง</button>
+  <button id="capture" class="secondary" disabled>📸 ถ่ายภาพ</button>
+ </div>
 
-  <p id="status">
-    กดเปิดกล้อง แล้วหันกล้องไปที่ QR Code
-  </p>
+ <div class="row" style="margin-top:9px">
+  <button id="stop" class="secondary" disabled>หยุดกล้อง</button>
+  <button id="live" class="primary" disabled>สแกนสด</button>
+ </div>
 
-  <label class="file"
-         for="photo"
-         style="display:block;margin-top:12px">
-    เลือกรูป QR Code จากเครื่อง
-  </label>
+ <img id="preview" alt="ภาพที่ถ่าย">
 
-  <input
-    id="photo"
-    type="file"
-    accept="image/*"
-  >
+ <p id="status">
+  กดเปิดกล้องเพื่อเริ่มต้น
+ </p>
+
+ <label class="file" for="photo"
+ style="display:block;margin-top:12px">
+ เลือกรูป QR Code จากเครื่อง
+ </label>
+
+ <input id="photo" type="file" accept="image/*">
 
 </section>
 
 <section class="card">
 
-  <b>ข้อมูลที่อ่านได้จาก QR Code</b>
+ <b>ข้อมูลที่อ่านได้จาก QR Code</b>
 
-  <p class="note">
-    ระบบจะแสดงข้อมูลจริงที่ถูกบันทึกไว้ใน QR Code
-  </p>
+ <p class="note">
+ ข้อมูลจริงที่ถอดรหัสได้จาก QR Code
+ </p>
 
-  <textarea
-    id="result"
-    placeholder="ผลการสแกนจะแสดงตรงนี้"
-  ></textarea>
+ <textarea id="result"
+ placeholder="ผลการสแกนจะแสดงตรงนี้"></textarea>
 
-  <div class="row">
-
-    <button id="copy" class="primary">
-      คัดลอกข้อมูล
-    </button>
-
-    <button id="clear" class="secondary">
-      ล้างข้อมูล
-    </button>
-
-  </div>
+ <div class="row">
+  <button id="copy" class="primary">คัดลอกข้อมูล</button>
+  <button id="clear" class="secondary">ล้างข้อมูล</button>
+ </div>
 
 </section>
 
 <section class="card note">
+<b>วิธีใช้งาน</b><br>
+1. กดเปิดกล้อง<br>
+2. หันกล้องไปที่ QR Code<br>
+3. กดถ่ายภาพ หรือกดสแกนสด<br>
+4. ระบบถอดรหัส QR Code<br>
+5. คัดลอกข้อมูลไปใช้งานได้
 
-  <b>วิธีใช้งาน</b><br>
-  1. กดเปิดกล้องสแกน<br>
-  2. นำ QR Code มาไว้ในกรอบกล้อง<br>
-  3. รอระบบอ่านข้อมูล<br>
-  4. ข้อมูลจะแสดงด้านล่าง<br>
-  5. กดคัดลอกเพื่อนำไปใช้งาน
-
-  <br><br>
-
-  <b>หมายเหตุ:</b>
-  QR Code ที่ไม่มีข้อมูลจริง จะไม่สามารถถอดข้อมูลออกมาได้
-  เว็บไซต์ต้องเปิดผ่าน HTTPS และอนุญาตให้ใช้กล้อง
-
+<br><br>
+ต้องเปิดเว็บไซต์ผ่าน HTTPS และอนุญาตให้ใช้กล้อง
 </section>
 
 </main>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d",{willReadFrequently:true});
+const statusEl=document.getElementById("status");
+const resultEl=document.getElementById("result");
+const preview=document.getElementById("preview");
 
-const startBtn = document.getElementById("start");
-const stopBtn = document.getElementById("stop");
-const statusEl = document.getElementById("status");
-const resultEl = document.getElementById("result");
-const photoEl = document.getElementById("photo");
+let stream=null;
+let liveScanning=false;
 
-let scanner = null;
-let scanning = false;
-let lastResult = "";
+function decodeImage(image){
+ canvas.width=image.naturalWidth || image.videoWidth || image.width;
+ canvas.height=image.naturalHeight || image.videoHeight || image.height;
 
-function showResult(text) {
+ ctx.drawImage(image,0,0,canvas.width,canvas.height);
 
-  resultEl.value = text;
-  lastResult = text;
+ const data=ctx.getImageData(0,0,canvas.width,canvas.height);
 
-  statusEl.textContent =
-    "สแกน QR Code สำเร็จแล้ว";
+ const code=jsQR(data.data,data.width,data.height,{
+  inversionAttempts:"attemptBoth"
+ });
 
-}
-
-function checkLibrary() {
-
-  if (!window.Html5Qrcode) {
-
-    statusEl.textContent =
-      "โหลดระบบสแกนไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต";
-
-    return false;
-  }
-
+ if(code){
+  resultEl.value=code.data;
+  statusEl.textContent="สแกน QR Code สำเร็จแล้ว";
   return true;
+ }
+
+ statusEl.textContent="ไม่พบ QR Code ในภาพ กรุณาลองถ่ายใหม่";
+ return false;
 }
 
 // เปิดกล้อง
-startBtn.addEventListener("click", async () => {
+document.getElementById("start").onclick=async()=>{
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({
+   video:{
+    facingMode:{ideal:"environment"},
+    width:{ideal:1920},
+    height:{ideal:1080}
+   },
+   audio:false
+  });
 
-  if (!checkLibrary() || scanning) return;
+  video.srcObject=stream;
+  await video.play();
 
-  try {
+  document.getElementById("capture").disabled=false;
+  document.getElementById("stop").disabled=false;
+  document.getElementById("live").disabled=false;
+  document.getElementById("start").disabled=true;
 
-    scanner = new Html5Qrcode("reader", {
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE
-      ],
-      verbose: false
-    });
+  statusEl.textContent="เปิดกล้องแล้ว พร้อมถ่ายภาพหรือสแกนสด";
 
-    statusEl.textContent = "กำลังเปิดกล้อง...";
+ }catch(error){
+  statusEl.textContent="เปิดกล้องไม่ได้: "+error.message+
+  " กรุณาอนุญาตกล้องและใช้ HTTPS";
+ }
+};
 
-    await scanner.start(
+// ถ่ายภาพจากกล้องภายในเว็บ
+document.getElementById("capture").onclick=()=>{
+ if(!video.videoWidth)return;
 
-      { facingMode: "environment" },
+ canvas.width=video.videoWidth;
+ canvas.height=video.videoHeight;
 
-      {
-        fps: 10,
-        qrbox: {
-          width: 250,
-          height: 250
-        },
-        aspectRatio: 1
-      },
+ ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
-      (decodedText) => {
+ preview.src=canvas.toDataURL("image/jpeg",0.95);
+ preview.style.display="block";
 
-        if (decodedText !== lastResult) {
-          showResult(decodedText);
-        }
+ const data=ctx.getImageData(0,0,canvas.width,canvas.height);
 
-      },
+ const code=jsQR(data.data,data.width,data.height,{
+  inversionAttempts:"attemptBoth"
+ });
 
-      () => {}
+ if(code){
+  resultEl.value=code.data;
+  statusEl.textContent="ถ่ายภาพและอ่าน QR Code สำเร็จแล้ว";
+ }else{
+  statusEl.textContent="ถ่ายภาพแล้ว แต่ไม่พบ QR Code กรุณาจัดภาพใหม่";
+ }
+};
 
-    );
+// สแกนสด
+document.getElementById("live").onclick=()=>{
+ if(!stream)return;
 
-    scanning = true;
+ liveScanning=!liveScanning;
 
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
+ document.getElementById("live").textContent=
+ liveScanning?"หยุดสแกนสด":"สแกนสด";
 
-    statusEl.textContent =
-      "เปิดกล้องแล้ว กรุณาวาง QR Code ในกรอบ";
+ if(liveScanning) scanFrame();
+};
 
-  } catch (error) {
+function scanFrame(){
+ if(!liveScanning || !stream)return;
 
-    statusEl.textContent =
-      "เปิดกล้องไม่ได้: " +
-      error.message +
-      " กรุณาอนุญาตกล้องหรือเลือกรูปแทน";
+ if(video.readyState>=2){
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
 
-    scanner = null;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
+  const data=ctx.getImageData(0,0,canvas.width,canvas.height);
+
+  const code=jsQR(data.data,data.width,data.height,{
+   inversionAttempts:"attemptBoth"
+  });
+
+  if(code){
+   resultEl.value=code.data;
+   statusEl.textContent="สแกน QR Code สำเร็จแล้ว";
+   liveScanning=false;
+   document.getElementById("live").textContent="สแกนสด";
+   return;
   }
+ }
 
-});
+ requestAnimationFrame(scanFrame);
+}
 
 // หยุดกล้อง
-stopBtn.addEventListener("click", async () => {
+document.getElementById("stop").onclick=()=>{
+ liveScanning=false;
 
-  if (scanner && scanning) {
+ if(stream){
+  stream.getTracks().forEach(track=>track.stop());
+ }
 
-    try {
+ stream=null;
+ video.srcObject=null;
 
-      await scanner.stop();
-      await scanner.clear();
+ document.getElementById("start").disabled=false;
+ document.getElementById("capture").disabled=true;
+ document.getElementById("stop").disabled=true;
+ document.getElementById("live").disabled=true;
+ document.getElementById("live").textContent="สแกนสด";
 
-    } catch (error) {}
+ statusEl.textContent="หยุดกล้องแล้ว";
+};
 
-  }
+// สแกนจากรูป
+document.getElementById("photo").onchange=event=>{
+ const file=event.target.files[0];
+ if(!file)return;
 
-  scanner = null;
-  scanning = false;
+ const image=new Image();
+ const url=URL.createObjectURL(file);
 
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
+ image.onload=()=>{
+  preview.src=url;
+  preview.style.display="block";
+  decodeImage(image);
+  URL.revokeObjectURL(url);
+ };
 
-  statusEl.textContent = "หยุดกล้องแล้ว";
+ image.onerror=()=>{
+  statusEl.textContent="เปิดรูปภาพไม่สำเร็จ";
+  URL.revokeObjectURL(url);
+ };
 
-});
+ image.src=url;
+ event.target.value="";
+};
 
-// สแกนจากรูปภาพ
-photoEl.addEventListener("change", async (event) => {
+// คัดลอก
+document.getElementById("copy").onclick=async()=>{
+ const value=resultEl.value.trim();
 
-  const file = event.target.files[0];
+ if(!value){
+  statusEl.textContent="ยังไม่มีข้อมูลให้คัดลอก";
+  return;
+ }
 
-  if (!file) return;
-
-  if (!checkLibrary()) return;
-
-  try {
-
-    if (scanning && scanner) {
-
-      await scanner.stop();
-      await scanner.clear();
-
-      scanner = null;
-      scanning = false;
-
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-
-    }
-
-    statusEl.textContent =
-      "กำลังอ่าน QR Code จากรูปภาพ...";
-
-    const imageScanner = new Html5Qrcode("reader");
-
-    const decodedText =
-      await imageScanner.scanFile(file, true);
-
-    showResult(decodedText);
-
-    await imageScanner.clear();
-
-  } catch (error) {
-
-    statusEl.textContent =
-      "ไม่พบ QR Code ในรูปภาพ หรือภาพไม่ชัด";
-
-  } finally {
-
-    photoEl.value = "";
-
-  }
-
-});
-
-// คัดลอกข้อมูล
-document.getElementById("copy").addEventListener(
-  "click",
-  async () => {
-
-    const value = resultEl.value.trim();
-
-    if (!value) {
-
-      statusEl.textContent =
-        "ยังไม่มีข้อมูลให้คัดลอก";
-
-      return;
-    }
-
-    try {
-
-      await navigator.clipboard.writeText(value);
-
-      statusEl.textContent =
-        "คัดลอกข้อมูลเรียบร้อยแล้ว";
-
-    } catch (error) {
-
-      resultEl.select();
-
-      statusEl.textContent =
-        "เลือกข้อความแล้ว กดคัดลอกได้เลย";
-
-    }
-
-  }
-);
+ try{
+  await navigator.clipboard.writeText(value);
+  statusEl.textContent="คัดลอกข้อมูลแล้ว";
+ }catch(error){
+  resultEl.select();
+  statusEl.textContent="เลือกข้อความแล้ว กดคัดลอกได้เลย";
+ }
+};
 
 // ล้างข้อมูล
-document.getElementById("clear").addEventListener(
-  "click",
-  () => {
-
-    resultEl.value = "";
-    lastResult = "";
-
-    statusEl.textContent =
-      "ล้างข้อมูลแล้ว พร้อมสแกนใหม่";
-
-  }
-);
+document.getElementById("clear").onclick=()=>{
+ resultEl.value="";
+ preview.style.display="none";
+ statusEl.textContent="ล้างข้อมูลแล้ว พร้อมสแกนใหม่";
+};
 
 // ปิดกล้องเมื่อออกจากหน้า
-window.addEventListener("pagehide", async () => {
-
-  if (scanner && scanning) {
-
-    try {
-      await scanner.stop();
-    } catch (error) {}
-
-  }
-
+window.addEventListener("pagehide",()=>{
+ if(stream){
+  stream.getTracks().forEach(track=>track.stop());
+ }
 });
-
 </script>
 
 </body>
