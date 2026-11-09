@@ -3,259 +3,441 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Barcode OCR Scanner</title>
+<meta name="theme-color" content="#5145e5">
+<title>QR Code Scanner</title>
 
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f4f5fa;
-  padding: 20px;
+  margin: 0;
+  padding: 18px 14px;
+  background: #f5f6fb;
   color: #182033;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.container {
+main {
   max-width: 600px;
   margin: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 18px;
 }
 
-h2 { text-align: center; }
+h1 {
+  font-size: 25px;
+  margin: 4px 0 8px;
+}
 
-button, .upload {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  margin-top: 10px;
+.muted {
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e7ef;
+  border-radius: 18px;
+  padding: 16px;
+  margin: 14px 0;
+}
+
+button, .file {
+  border: 0;
+  border-radius: 13px;
+  padding: 14px 12px;
   font-size: 16px;
+  font-weight: 650;
+  text-align: center;
   cursor: pointer;
+}
+
+.primary {
   background: #5145e5;
   color: white;
 }
 
-.upload {
-  display: block;
-  text-align: center;
-  background: #eeeeff;
+.secondary, .file {
+  background: #eeefff;
   color: #352bb7;
 }
 
-input[type=file] { display: none; }
+.row {
+  display: flex;
+  gap: 9px;
+}
 
-video, img {
+.row > * {
+  flex: 1;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+input[type=file] {
+  display: none;
+}
+
+#reader {
   width: 100%;
-  margin-top: 15px;
-  border-radius: 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
+#reader video {
+  border-radius: 12px;
+}
+
+#status {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5d687d;
+  margin: 12px 0 0;
 }
 
 #result {
-  background: #f0faf2;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-  overflow-wrap: anywhere;
-}
-
-#code {
   width: 100%;
+  min-height: 120px;
   padding: 14px;
-  font-size: 24px;
-  margin-top: 10px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
+  border: 1px solid #cfd5e2;
+  border-radius: 12px;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin: 10px 0;
 }
 
+.note {
+  font-size: 13px;
+  color: #667085;
+  line-height: 1.6;
+}
 </style>
 </head>
 
 <body>
+<main>
 
-<div class="container">
+<h1>QR Code Scanner</h1>
 
-<h2>Barcode OCR Scanner</h2>
-
-<p>อ่านตัวเลขใต้บาร์โค้ดจากภาพ</p>
-
-<button onclick="startCamera()">เปิดกล้อง</button>
-
-<video id="video" autoplay playsinline
-style="display:none"></video>
-
-<button onclick="capture()">ถ่ายภาพ</button>
-
-<canvas id="canvas" hidden></canvas>
-
-<label class="upload" for="photo">
-เลือกรูปภาพจาก iPhone
-</label>
-
-<input type="file" id="photo"
-accept="image/*" capture="environment">
-
-<p id="status">พร้อมใช้งาน</p>
-
-<div id="result">
-
-<strong>รหัสสินค้าที่อ่านได้</strong>
-
-<input id="code" placeholder="เช่น 51080-1">
-
-<p id="raw"></p>
-
+<div class="muted">
+สแกน QR Code เพื่ออ่านข้อมูลที่ซ่อนอยู่ภายใน
+รองรับการสแกนผ่านกล้องและรูปภาพจากเครื่อง
 </div>
 
-<button onclick="copyCode()">คัดลอกรหัส</button>
+<section class="card">
 
-<button onclick="clearData()">ล้างข้อมูล</button>
+  <div class="row">
+    <button id="start" class="primary">
+      เปิดกล้องสแกน
+    </button>
 
-</div>
+    <button id="stop" class="secondary" disabled>
+      หยุดกล้อง
+    </button>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <div id="reader"></div>
+
+  <p id="status">
+    กดเปิดกล้อง แล้วหันกล้องไปที่ QR Code
+  </p>
+
+  <label class="file"
+         for="photo"
+         style="display:block;margin-top:12px">
+    เลือกรูป QR Code จากเครื่อง
+  </label>
+
+  <input
+    id="photo"
+    type="file"
+    accept="image/*"
+  >
+
+</section>
+
+<section class="card">
+
+  <b>ข้อมูลที่อ่านได้จาก QR Code</b>
+
+  <p class="note">
+    ระบบจะแสดงข้อมูลจริงที่ถูกบันทึกไว้ใน QR Code
+  </p>
+
+  <textarea
+    id="result"
+    placeholder="ผลการสแกนจะแสดงตรงนี้"
+  ></textarea>
+
+  <div class="row">
+
+    <button id="copy" class="primary">
+      คัดลอกข้อมูล
+    </button>
+
+    <button id="clear" class="secondary">
+      ล้างข้อมูล
+    </button>
+
+  </div>
+
+</section>
+
+<section class="card note">
+
+  <b>วิธีใช้งาน</b><br>
+  1. กดเปิดกล้องสแกน<br>
+  2. นำ QR Code มาไว้ในกรอบกล้อง<br>
+  3. รอระบบอ่านข้อมูล<br>
+  4. ข้อมูลจะแสดงด้านล่าง<br>
+  5. กดคัดลอกเพื่อนำไปใช้งาน
+
+  <br><br>
+
+  <b>หมายเหตุ:</b>
+  QR Code ที่ไม่มีข้อมูลจริง จะไม่สามารถถอดข้อมูลออกมาได้
+  เว็บไซต์ต้องเปิดผ่าน HTTPS และอนุญาตให้ใช้กล้อง
+
+</section>
+
+</main>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
+const startBtn = document.getElementById("start");
+const stopBtn = document.getElementById("stop");
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+const photoEl = document.getElementById("photo");
 
-let stream = null;
+let scanner = null;
+let scanning = false;
+let lastResult = "";
 
-async function startCamera() {
+function showResult(text) {
+
+  resultEl.value = text;
+  lastResult = text;
+
+  statusEl.textContent =
+    "สแกน QR Code สำเร็จแล้ว";
+
+}
+
+function checkLibrary() {
+
+  if (!window.Html5Qrcode) {
+
+    statusEl.textContent =
+      "โหลดระบบสแกนไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต";
+
+    return false;
+  }
+
+  return true;
+}
+
+// เปิดกล้อง
+startBtn.addEventListener("click", async () => {
+
+  if (!checkLibrary() || scanning) return;
 
   try {
 
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
+    scanner = new Html5Qrcode("reader", {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE
+      ],
+      verbose: false
     });
 
-    video.srcObject = stream;
-    video.style.display = "block";
+    statusEl.textContent = "กำลังเปิดกล้อง...";
 
-    document.getElementById("status").innerText =
-      "เปิดกล้องแล้ว จัดตำแหน่งตัวเลขให้ชัดเจน";
+    await scanner.start(
+
+      { facingMode: "environment" },
+
+      {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        },
+        aspectRatio: 1
+      },
+
+      (decodedText) => {
+
+        if (decodedText !== lastResult) {
+          showResult(decodedText);
+        }
+
+      },
+
+      () => {}
+
+    );
+
+    scanning = true;
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+
+    statusEl.textContent =
+      "เปิดกล้องแล้ว กรุณาวาง QR Code ในกรอบ";
 
   } catch (error) {
 
-    alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตใช้กล้องและเปิดผ่าน HTTPS");
+    statusEl.textContent =
+      "เปิดกล้องไม่ได้: " +
+      error.message +
+      " กรุณาอนุญาตกล้องหรือเลือกรูปแทน";
+
+    scanner = null;
 
   }
 
-}
+});
 
-async function capture() {
+// หยุดกล้อง
+stopBtn.addEventListener("click", async () => {
 
-  if (!video.videoWidth) {
-    alert("กรุณาเปิดกล้องก่อน");
-    return;
+  if (scanner && scanning) {
+
+    try {
+
+      await scanner.stop();
+      await scanner.clear();
+
+    } catch (error) {}
+
   }
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  scanner = null;
+  scanning = false;
 
-  canvas.getContext("2d").drawImage(
-    video, 0, 0
-  );
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
 
-  readOCR(canvas);
+  statusEl.textContent = "หยุดกล้องแล้ว";
 
-}
+});
 
-document.getElementById("photo").addEventListener(
-  "change", function(event) {
+// สแกนจากรูปภาพ
+photoEl.addEventListener("change", async (event) => {
 
-    const file = event.target.files[0];
+  const file = event.target.files[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    const img = new Image();
+  if (!checkLibrary()) return;
 
-    img.onload = function() {
-      readOCR(img);
-      URL.revokeObjectURL(img.src);
-    };
+  try {
 
-    img.src = URL.createObjectURL(file);
+    if (scanning && scanner) {
+
+      await scanner.stop();
+      await scanner.clear();
+
+      scanner = null;
+      scanning = false;
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+    }
+
+    statusEl.textContent =
+      "กำลังอ่าน QR Code จากรูปภาพ...";
+
+    const imageScanner = new Html5Qrcode("reader");
+
+    const decodedText =
+      await imageScanner.scanFile(file, true);
+
+    showResult(decodedText);
+
+    await imageScanner.clear();
+
+  } catch (error) {
+
+    statusEl.textContent =
+      "ไม่พบ QR Code ในรูปภาพ หรือภาพไม่ชัด";
+
+  } finally {
+
+    photoEl.value = "";
+
+  }
+
+});
+
+// คัดลอกข้อมูล
+document.getElementById("copy").addEventListener(
+  "click",
+  async () => {
+
+    const value = resultEl.value.trim();
+
+    if (!value) {
+
+      statusEl.textContent =
+        "ยังไม่มีข้อมูลให้คัดลอก";
+
+      return;
+    }
+
+    try {
+
+      await navigator.clipboard.writeText(value);
+
+      statusEl.textContent =
+        "คัดลอกข้อมูลเรียบร้อยแล้ว";
+
+    } catch (error) {
+
+      resultEl.select();
+
+      statusEl.textContent =
+        "เลือกข้อความแล้ว กดคัดลอกได้เลย";
+
+    }
 
   }
 );
 
-async function readOCR(image) {
+// ล้างข้อมูล
+document.getElementById("clear").addEventListener(
+  "click",
+  () => {
 
-  const status = document.getElementById("status");
+    resultEl.value = "";
+    lastResult = "";
 
-  status.innerText = "กำลังอ่านตัวเลข...";
+    statusEl.textContent =
+      "ล้างข้อมูลแล้ว พร้อมสแกนใหม่";
 
-  try {
+  }
+);
 
-    const worker = await Tesseract.createWorker("eng");
+// ปิดกล้องเมื่อออกจากหน้า
+window.addEventListener("pagehide", async () => {
 
-    const result = await worker.recognize(image);
+  if (scanner && scanning) {
 
-    await worker.terminate();
-
-    const text = result.data.text.trim();
-
-    document.getElementById("raw").innerText =
-      "ข้อความทั้งหมด:\n" + text;
-
-    // ค้นหารหัสรูปแบบ 51080-1
-    const match = text.match(
-      /[A-Z0-9]{3,}[-–][A-Z0-9]+/i
-    );
-
-    if (match) {
-
-      document.getElementById("code").value =
-        match[0].replace("–", "-");
-
-      status.innerText = "อ่านรหัสสำเร็จ";
-
-    } else {
-
-      status.innerText =
-        "อ่านภาพแล้ว แต่ไม่พบรหัสอัตโนมัติ";
-
-    }
-
-  } catch(error) {
-
-    status.innerText = "เกิดข้อผิดพลาด: " + error.message;
+    try {
+      await scanner.stop();
+    } catch (error) {}
 
   }
 
-}
-
-async function copyCode() {
-
-  const code = document.getElementById("code").value;
-
-  if (!code) {
-    alert("ไม่มีรหัสให้คัดลอก");
-    return;
-  }
-
-  await navigator.clipboard.writeText(code);
-
-  alert("คัดลอกรหัสแล้ว: " + code);
-
-}
-
-function clearData() {
-
-  document.getElementById("code").value = "";
-  document.getElementById("raw").innerText = "";
-  document.getElementById("status").innerText = "พร้อมสแกนใหม่";
-
-}
-
-window.addEventListener("pagehide", () => {
-  if (stream) {
-    stream.getTracks().forEach(track => track.stop());
-  }
 });
 
 </script>
