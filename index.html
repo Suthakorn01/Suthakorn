@@ -3,30 +3,28 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#172554">
-<title>Barcode Scanner - Accurate</title>
+<title>Barcode Scanner Pro</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;padding:16px;background:#f3f5fa;color:#172033;font-family:Arial,sans-serif}
 main{max-width:600px;margin:auto}
-h1{font-size:25px;margin:5px 0}
-.sub{font-size:14px;color:#667085;line-height:1.6}
+h1{font-size:25px}
 .card{background:white;border:1px solid #e3e7ef;border-radius:16px;padding:16px;margin:14px 0}
-button{border:0;border-radius:12px;padding:14px 9px;font-size:15px;font-weight:bold;cursor:pointer}
+.small{font-size:14px;color:#667085;line-height:1.7}
+button{border:0;border-radius:12px;padding:14px 8px;font-size:15px;font-weight:bold}
 button:disabled{opacity:.4}
 .primary{background:#3730a3;color:white}
 .secondary{background:#e9eaff;color:#3730a3}
 .row{display:flex;gap:9px;margin-top:10px}
-.row>*{flex:1;min-width:0}
-video{width:100%;background:#111827;border-radius:12px;display:block;min-height:190px;max-height:380px;object-fit:cover}
-#preview{display:none;width:100%;max-height:300px;object-fit:contain;margin-top:12px;border-radius:10px}
+.row>*{flex:1}
+video{width:100%;min-height:190px;background:#111827;border-radius:12px}
+#preview{display:none;width:100%;max-height:300px;object-fit:contain;margin-top:12px}
 #file{display:none}
-#status{font-size:14px;line-height:1.6;color:#475467}
-.small{font-size:13px;color:#667085;line-height:1.7}
-.result{font-size:26px;font-weight:bold;letter-spacing:1px;text-align:center;padding:16px 8px;background:#f8fafc;border:2px solid #cbd5e1;border-radius:12px;overflow-wrap:anywhere}
-input{width:100%;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-size:19px}
-.line{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #edf0f4;font-size:14px}
+.result{padding:16px;text-align:center;font-size:27px;font-weight:bold;background:#f8fafc;border:2px solid #cbd5e1;border-radius:12px;overflow-wrap:anywhere}
+input{width:100%;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-size:20px}
+.line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
 .good{color:#087443;font-weight:bold}
 .bad{color:#b42318;font-weight:bold}
 .warn{color:#a15c00;font-weight:bold}
@@ -35,84 +33,52 @@ input{width:100%;padding:14px;border:1px solid #cbd5e1;border-radius:10px;font-s
 <body>
 <main>
 <h1>Barcode Scanner Pro</h1>
-<div class="sub">ระบบสแกนบาร์โค้ดเส้น เน้น CODE 39 และ CODE 128 พร้อมตรวจสอบรหัส</div>
+<p class="small">ระบบสแกนบาร์โค้ดเส้น เน้น CODE 39 / CODE 128</p>
 
 <section class="card">
-<b>1. กล้องสแกนบาร์โค้ด</b>
-<p class="small">จัดบาร์โค้ดให้อยู่กลางภาพ เห็นเส้นทั้งหมด และถือกล้องให้นิ่ง</p>
-
+<b>1. กล้องสแกน</b>
+<p class="small">วางบาร์โค้ดให้อยู่กลางภาพและเห็นเส้นทั้งหมด</p>
 <video id="video" playsinline muted></video>
 
 <div class="row">
 <button id="start" class="primary">เปิดกล้อง</button>
 <button id="capture" class="secondary" disabled>📸 ถ่ายภาพ</button>
 </div>
-
 <div class="row">
 <button id="stop" class="secondary" disabled>หยุดกล้อง</button>
 <button id="choose" class="secondary">เลือกรูปภาพ</button>
 </div>
-
 <input id="file" type="file" accept="image/*">
 <img id="preview" alt="ภาพบาร์โค้ด">
-
-<p id="status">กดเปิดกล้องเพื่อเริ่มสแกน</p>
+<p id="status" class="small">กำลังตรวจสอบระบบ...</p>
 </section>
 
 <section class="card">
-<b>2. ผลการอ่านบาร์โค้ด</b>
-<p class="small">รหัสที่อ่านได้จากลายเส้นโดยตรง</p>
-
-<div id="result" class="result">ยังไม่มีข้อมูล</div>
-
-<div class="line">
-<span>ชนิดบาร์โค้ด</span>
-<b id="format">-</b>
-</div>
-<div class="line">
-<span>อ่านซ้ำตรงกัน</span>
-<b id="repeat">0 / 3</b>
-</div>
-<div class="line">
-<span>Check Digit</span>
-<b id="checksum">ยังไม่ตรวจสอบ</b>
-</div>
+<b>2. ผลการอ่าน</b>
+<div id="result" class="result" style="margin-top:12px">ยังไม่มีข้อมูล</div>
+<div class="line"><span>ชนิดบาร์โค้ด</span><b id="format">-</b></div>
+<div class="line"><span>อ่านตรงกัน</span><b id="repeat">0 / 3</b></div>
+<div class="line"><span>Check Digit</span><b id="checksum">ยังไม่ตรวจ</b></div>
 </section>
 
 <section class="card">
-<b>3. ตรวจสอบกับเลขใต้บาร์โค้ด</b>
-<p class="small">
-ตัวอย่างจากภาพของคุณคือ 51080-1
-กรอกเลขที่มองเห็นบนกระดาษเพื่อเทียบกับผลการสแกน
-</p>
-
-<input id="reference" type="text" placeholder="เช่น 51080-1" autocomplete="off">
-
+<b>3. ตรวจสอบกับเลขใต้เส้น</b>
+<p class="small">ตัวอย่างเลขจากกระดาษของคุณ: 51080-1</p>
+<input id="reference" placeholder="กรอกเลขใต้บาร์โค้ด">
 <div class="row">
-<button id="verify" class="primary">ตรวจสอบรหัส</button>
+<button id="verify" class="primary">ตรวจสอบ</button>
 <button id="clear" class="secondary">ล้างข้อมูล</button>
 </div>
-
 <p id="verifyStatus" class="small">ยังไม่ได้ตรวจสอบ</p>
-
-<button id="copy" class="primary" style="width:100%;margin-top:10px" disabled>
-คัดลอกรหัสที่ตรวจสอบแล้ว
-</button>
+<button id="copy" class="primary" style="width:100%" disabled>คัดลอกรหัสที่ยืนยันแล้ว</button>
 </section>
 
-<section class="card small">
-<b>รูปแบบที่รองรับ</b>
-<br>CODE 39 / CODE 128 / EAN-13 / EAN-8
-<br>UPC-A / UPC-E / ITF / CODABAR
-
-<br><br>
-<b>หมายเหตุ:</b>
-การอ่านซ้ำ 3 ครั้งช่วยกรองการอ่านที่ไม่สม่ำเสมอ แต่ไม่ยืนยันว่าตรงกับกระดาษ ต้องใช้ช่องตรวจสอบเลขต้นฉบับด้วย
-</section>
 </main>
 
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
+<script
+ src="https://unpkg.com/@zxing/browser@0.2.1"
+ onerror="document.getElementById('status').textContent='โหลดระบบสแกนไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต'">
+</script>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -121,101 +87,60 @@ const video=$("video");
 let reader=null;
 let controls=null;
 let running=false;
-
 let candidate="";
 let candidateFormat="";
 let count=0;
-let lastCountTime=0;
-
-let scannedCode="";
-let scannedFormat="";
+let lastTime=0;
+let code="";
+let format="";
 let verified=false;
 
-const supportedFormats=[
- ZXing.BarcodeFormat.CODE_39,
- ZXing.BarcodeFormat.CODE_128,
- ZXing.BarcodeFormat.EAN_13,
- ZXing.BarcodeFormat.EAN_8,
- ZXing.BarcodeFormat.UPC_A,
- ZXing.BarcodeFormat.UPC_E,
- ZXing.BarcodeFormat.ITF,
- ZXing.BarcodeFormat.CODABAR
-];
+function status(t){$("status").textContent=t}
 
-function makeHints(){
- const hints=new Map();
- hints.set(
-  ZXing.DecodeHintType.POSSIBLE_FORMATS,
-  supportedFormats
- );
- hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
- return hints;
-}
-
-function getReader(){
- if(!reader){
-  reader=new ZXingBrowser.BrowserMultiFormatReader(
-   makeHints(),
-   {
-    delayBetweenScanAttempts:250,
-    delayBetweenScanSuccess:500
-   }
-  );
- }
+function initReader(){
+ if(!window.ZXingBrowser)throw Error("ไม่พบ ZXingBrowser");
+ if(!ZXingBrowser.BrowserMultiFormatOneDReader)
+  throw Error("ไม่พบตัวอ่านบาร์โค้ด 1D");
+ if(!reader)reader=new ZXingBrowser.BrowserMultiFormatOneDReader();
  return reader;
 }
 
-function nameFormat(format){
- const names={
-  CODE_39:"CODE 39",
-  CODE_128:"CODE 128",
-  EAN_13:"EAN-13",
-  EAN_8:"EAN-8",
-  UPC_A:"UPC-A",
-  UPC_E:"UPC-E",
-  ITF:"ITF",
-  CODABAR:"CODABAR"
- };
- return names[format]||String(format);
-}
-
-function checkDigit(code){
- if(!/^\d+$/.test(code))return null;
-
- if(![8,12,13].includes(code.length))return null;
-
- const nums=code.split("").map(Number);
- const check=nums.pop();
-
- let sum=0;
- for(let i=0;i<nums.length;i++){
-  const distance=nums.length-1-i;
-  sum+=nums[i]*(distance%2===0?3:1);
+window.addEventListener("load",()=>{
+ try{
+  initReader();
+  status("ระบบพร้อมใช้งาน กดเปิดกล้องได้เลย");
+ }catch(e){
+  status("ระบบไม่พร้อม: "+e.message);
  }
+});
 
- return ((10-(sum%10))%10)===check;
-}
-
-function resetVerification(){
+function resetVerify(){
  verified=false;
  $("copy").disabled=true;
  $("verifyStatus").textContent="ยังไม่ได้ตรวจสอบ";
  $("verifyStatus").className="small";
 }
 
-function showResult(code,format){
- scannedCode=code;
- scannedFormat=format;
+function checkDigit(s){
+ if(!/^\d+$/.test(s)||![8,12,13].includes(s.length))return null;
+ const a=s.split("").map(Number);
+ const last=a.pop();
+ let sum=0;
+ for(let i=0;i<a.length;i++){
+  sum+=a[i]*((a.length-1-i)%2===0?3:1);
+ }
+ return (10-sum%10)%10===last;
+}
 
- $("result").textContent=code;
- $("format").textContent=nameFormat(format);
+function showResult(text,fmt,repeatText){
+ code=text;
+ format=fmt;
 
- const check=(
-  format==="EAN_13" ||
-  format==="EAN_8" ||
-  format==="UPC_A"
- )?checkDigit(code):null;
+ $("result").textContent=text;
+ $("format").textContent=fmt;
+ $("repeat").textContent=repeatText;
 
+ const check=checkDigit(text);
  if(check===true){
   $("checksum").textContent="ผ่าน";
   $("checksum").className="good";
@@ -223,15 +148,13 @@ function showResult(code,format){
   $("checksum").textContent="ไม่ผ่าน";
   $("checksum").className="bad";
  }else{
-  $("checksum").textContent="ไม่มีการตรวจ Check Digit";
+  $("checksum").textContent="ไม่มี Check Digit";
   $("checksum").className="warn";
  }
 
  $("reference").value="";
- resetVerification();
-
- $("status").textContent=
-  "อ่านรหัสได้แล้ว กรุณาเทียบกับเลขที่พิมพ์ใต้บาร์โค้ด";
+ resetVerify();
+ status("อ่านได้แล้ว กรุณาเทียบกับเลขที่พิมพ์ใต้บาร์โค้ด");
 }
 
 function stopCamera(){
@@ -239,93 +162,70 @@ function stopCamera(){
   controls.stop();
   controls=null;
  }
-
- if(reader){
-  reader.reset();
- }
-
  running=false;
  $("start").disabled=false;
  $("stop").disabled=true;
  $("capture").disabled=true;
 }
 
-async function startCamera(){
- if(!window.ZXing || !window.ZXingBrowser){
-  $("status").textContent="โหลดระบบสแกนไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต";
-  return;
- }
-
- if(running)return;
-
+$("start").onclick=async()=>{
  try{
-  const r=getReader();
+  const r=initReader();
+  if(running)return;
 
   candidate="";
   candidateFormat="";
   count=0;
-  lastCountTime=0;
+  lastTime=0;
   running=true;
 
   $("start").disabled=true;
   $("stop").disabled=false;
   $("capture").disabled=false;
-  $("status").textContent="กำลังเปิดกล้อง...";
+  status("กำลังเปิดกล้อง...");
 
   controls=await r.decodeFromVideoDevice(
-   undefined,
-   video,
-   (result,error)=>{
-    if(!running || !result)return;
+   undefined,video,(result,error)=>{
+    if(!running||!result)return;
 
-    const code=result.getText();
-    const format=result.getBarcodeFormat();
+    const t=result.getText();
+    const f=String(result.getBarcodeFormat());
     const now=Date.now();
 
-    if(
-     code===candidate &&
-     format===candidateFormat &&
-     now-lastCountTime>=650
-    ){
+    if(t===candidate && f===candidateFormat && now-lastTime>=700){
      count++;
-    }else if(
-     code!==candidate ||
-     format!==candidateFormat
-    ){
-     candidate=code;
-     candidateFormat=format;
+    }else if(t!==candidate || f!==candidateFormat){
+     candidate=t;
+     candidateFormat=f;
      count=1;
     }
 
-    lastCountTime=now;
+    lastTime=now;
     $("repeat").textContent=Math.min(count,3)+" / 3";
 
     if(count>=3){
      stopCamera();
-     showResult(code,format);
-     $("repeat").textContent="3 / 3";
+     showResult(t,f,"3 / 3");
     }else{
-     $("status").textContent=
-      "พบรหัส กำลังอ่านซ้ำเพื่อยืนยัน "+count+"/3";
+     status("พบรหัส กำลังอ่านซ้ำ "+count+"/3");
     }
    }
   );
 
-  $("status").textContent="กล้องพร้อมแล้ว นำบาร์โค้ดมาให้กล้องอ่าน";
+  status("กล้องพร้อมแล้ว");
 
- }catch(error){
+ }catch(e){
   stopCamera();
-  $("status").textContent="เปิดกล้องไม่สำเร็จ: "+(error.message||error);
+  status("เปิดกล้องไม่ได้: "+e.message);
  }
-}
+};
 
-$("start").onclick=startCamera;
 $("stop").onclick=stopCamera;
 
-// ถ่ายภาพจากกล้องภายในเว็บ
+// ถ่ายภาพ
 $("capture").onclick=async()=>{
- if(!running || !video.videoWidth){
-  $("status").textContent="กล้องยังไม่พร้อม";
+ if(!running||!video.videoWidth){
+  status("กล้องยังไม่พร้อม");
   return;
  }
 
@@ -335,22 +235,20 @@ $("capture").onclick=async()=>{
  canvas.getContext("2d").drawImage(video,0,0);
 
  const img=$("preview");
- img.src=canvas.toDataURL("image/jpeg",0.98);
+ img.src=canvas.toDataURL("image/jpeg",1);
  img.style.display="block";
 
  try{
   await img.decode();
-  const result=await getReader().decodeFromImageElement(img);
+  const result=await initReader().decodeFromImageElement(img);
   stopCamera();
-  showResult(result.getText(),result.getBarcodeFormat());
-  $("repeat").textContent="อ่านจากภาพถ่าย";
- }catch(error){
-  $("status").textContent=
-   "อ่านภาพไม่สำเร็จ กรุณาถ่ายใหม่ให้เส้นชัดและครบทุกเส้น";
+  showResult(result.getText(),String(result.getBarcodeFormat()),"ภาพถ่าย");
+ }catch(e){
+  status("อ่านไม่ได้ กรุณาถ่ายใหม่ให้เส้นชัดและครบ");
  }
 };
 
-// เลือกรูปจากโทรศัพท์
+// เลือกรูป
 $("choose").onclick=()=>$("file").click();
 
 $("file").onchange=async()=>{
@@ -364,96 +262,77 @@ $("file").onchange=async()=>{
 
  try{
   await img.decode();
-  const result=await getReader().decodeFromImageElement(img);
-
-  showResult(result.getText(),result.getBarcodeFormat());
-  $("repeat").textContent="อ่านจากรูปภาพ";
- }catch(error){
-  $("status").textContent=
-   "ไม่พบบาร์โค้ดที่อ่านได้ กรุณาเลือกรูปที่ชัดกว่านี้";
+  const result=await initReader().decodeFromImageElement(img);
+  showResult(result.getText(),String(result.getBarcodeFormat()),"รูปภาพ");
+ }catch(e){
+  status("ไม่พบบาร์โค้ดในรูป กรุณาเลือกรูปใหม่");
  }finally{
   URL.revokeObjectURL(url);
   $("file").value="";
  }
 };
 
-// เทียบกับเลขที่พิมพ์ใต้บาร์โค้ด
+// ตรวจสอบเลขที่มองเห็น
 $("verify").onclick=()=>{
- if(!scannedCode){
-  $("verifyStatus").textContent="กรุณาสแกนบาร์โค้ดก่อน";
+ if(!code){
+  $("verifyStatus").textContent="กรุณาสแกนก่อน";
   return;
  }
 
- const reference=$("reference").value.trim();
+ const ref=$("reference").value.trim();
 
- if(!reference){
+ if(!ref){
   $("verifyStatus").textContent="กรุณากรอกเลขใต้บาร์โค้ด";
   return;
  }
 
- if(reference===scannedCode){
-  const check=(
-   scannedFormat==="EAN_13" ||
-   scannedFormat==="EAN_8" ||
-   scannedFormat==="UPC_A"
-  )?checkDigit(scannedCode):null;
-
-  if(check===false){
-   resetVerification();
-   $("verifyStatus").textContent=
-    "เลขตรงกัน แต่ Check Digit ไม่ผ่าน กรุณาตรวจสอบต้นฉบับ";
+ if(ref===code){
+  if(checkDigit(code)===false){
+   resetVerify();
+   $("verifyStatus").textContent="Check Digit ไม่ผ่าน";
    $("verifyStatus").className="small bad";
    return;
   }
 
   verified=true;
   $("copy").disabled=false;
-  $("verifyStatus").textContent=
-   "ผ่าน: เลขที่สแกนตรงกับเลขที่พิมพ์ใต้บาร์โค้ด";
+  $("verifyStatus").textContent="ตรงกัน: รหัสที่อ่านได้ตรงกับเลขใต้เส้น";
   $("verifyStatus").className="small good";
-
  }else{
-  resetVerification();
-  $("verifyStatus").textContent=
-   "ไม่ตรงกัน! เลขที่สแกนได้ไม่ตรงกับเลขใต้บาร์โค้ด";
+  resetVerify();
+  $("verifyStatus").textContent="ไม่ตรงกัน กรุณาตรวจสอบใหม่";
   $("verifyStatus").className="small bad";
  }
 };
 
-// คัดลอกเฉพาะรหัสที่ยืนยันแล้ว
 $("copy").onclick=async()=>{
- if(!verified || !scannedCode)return;
-
+ if(!verified)return;
  try{
-  await navigator.clipboard.writeText(scannedCode);
-  $("verifyStatus").textContent="คัดลอกรหัสที่ตรวจสอบแล้วสำเร็จ";
- }catch(error){
-  $("reference").value=scannedCode;
+  await navigator.clipboard.writeText(code);
+  $("verifyStatus").textContent="คัดลอกสำเร็จ";
+ }catch(e){
+  $("reference").value=code;
   $("reference").select();
-  $("verifyStatus").textContent="เลือกข้อความแล้ว กรุณากดคัดลอก";
+  $("verifyStatus").textContent="เลือกข้อความแล้ว กรุณาคัดลอก";
  }
 };
 
-// ล้างข้อมูล
 $("clear").onclick=()=>{
- scannedCode="";
- scannedFormat="";
+ code="";
+ format="";
  candidate="";
  candidateFormat="";
  count=0;
- lastCountTime=0;
+ lastTime=0;
 
  $("result").textContent="ยังไม่มีข้อมูล";
  $("format").textContent="-";
  $("repeat").textContent="0 / 3";
- $("checksum").textContent="ยังไม่ตรวจสอบ";
- $("checksum").className="";
+ $("checksum").textContent="ยังไม่ตรวจ";
  $("reference").value="";
  $("preview").style.display="none";
- $("verifyStatus").textContent="ยังไม่ได้ตรวจสอบ";
- $("verifyStatus").className="small";
- $("copy").disabled=true;
- $("status").textContent="พร้อมสแกนบาร์โค้ดใหม่";
+ resetVerify();
+ status("พร้อมสแกนใหม่");
 };
 
 window.addEventListener("pagehide",stopCamera);
