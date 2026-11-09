@@ -2,722 +2,405 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f3f5f8">
-<title>1D Barcode Memory</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Barcode Reader</title>
 
-<style>
-*{box-sizing:border-box}
-body{
-  margin:0;padding:18px;background:#f3f5f8;
-  color:#172033;font-family:Arial,sans-serif
-}
-main{max-width:600px;margin:auto}
-h2{margin:8px 0}
-.sub,.small{color:#667085;font-size:13px;line-height:1.6}
-.card{
-  background:white;padding:16px;border-radius:16px;
-  margin:15px 0;box-shadow:0 3px 15px #0000000b
-}
-.camera{
-  position:relative;background:#111;
-  border-radius:12px;overflow:hidden;aspect-ratio:4/3
-}
-video{width:100%;height:100%;object-fit:cover}
-.guide{
-  position:absolute;left:4%;right:4%;top:34%;height:32%;
-  border:2px solid #20d69a;
-  box-shadow:0 0 0 999px #0005;pointer-events:none
-}
-button{
-  width:100%;padding:14px;border:0;border-radius:10px;
-  font-size:16px;font-weight:bold;margin-top:10px;cursor:pointer
-}
-.primary{background:#1769e0;color:white}
-.secondary{background:#e9eef5;color:#243247}
-.status{
-  margin-top:12px;padding:12px;border-radius:10px;
-  background:#edf4ff;color:#244b83;font-size:14px;line-height:1.5;
-  overflow-wrap:anywhere
-}
-.result{
-  text-align:center;font-size:28px;font-weight:bold;
-  color:#087443;padding:15px 0;overflow-wrap:anywhere
-}
-.hidden{display:none!important}
-dialog{
-  width:90%;max-width:420px;border:0;
-  border-radius:16px;padding:22px
-}
-dialog::backdrop{background:#0009}
-input{
-  width:100%;padding:14px;border:1px solid #ccc;
-  border-radius:9px;font-size:18px;margin-top:12px
-}
-</style>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-<!-- ZXing: อ่านบาร์โค้ด 1 มิติ -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family: Arial, sans-serif;
+      background: #f2f4f7;
+      color: #222;
+    }
+    .app {
+      max-width: 520px;
+      margin: auto;
+      background: white;
+      padding: 18px;
+      border-radius: 16px;
+      box-shadow: 0 3px 15px #0001;
+    }
+    h2 { text-align: center; margin-top: 4px; }
+    .camera {
+      position: relative;
+      width: 100%;
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 220px;
+    }
+    video {
+      display: block;
+      width: 100%;
+      min-height: 220px;
+      object-fit: cover;
+    }
+    .guide {
+      position: absolute;
+      left: 5%;
+      width: 90%;
+      top: 18%;
+      height: 65%;
+      border: 2px dashed #00e676;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .guide-label {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: white;
+      font-size: 12px;
+      text-shadow: 0 1px 3px black;
+      pointer-events: none;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 9px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; }
+    .primary { background: #1769e0; color: white; }
+    .green { background: #168447; color: white; }
+    .gray { background: #e7e9ed; color: #222; }
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      font-size: 20px;
+      margin-top: 8px;
+    }
+    .section { margin-top: 18px; }
+    .status {
+      background: #f3f5f7;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+    .small { color: #666; font-size: 12px; line-height: 1.5; }
+    #progress { margin-top: 8px; font-size: 13px; color: #555; }
+  </style>
 </head>
 
 <body>
-<main>
-  <h2>1D Barcode Memory</h2>
-  <p class="sub">ระบบอ่านและจดจำบาร์โค้ด 1 มิติ</p>
+<div class="app">
+  <h2>ระบบอ่านเลขบาร์โค้ด</h2>
 
-  <div class="card">
-    <div class="camera">
-      <video id="video" muted playsinline autoplay></video>
-      <div class="guide"></div>
+  <div class="camera">
+    <video id="video" autoplay muted playsinline></video>
+    <div class="guide"></div>
+    <div class="guide-label">จัดบาร์โค้ดและเลขด้านล่างให้อยู่ในกรอบ</div>
+  </div>
+
+  <button class="primary" id="startBtn" onclick="startCamera()">
+    เปิดกล้อง
+  </button>
+
+  <button class="green" id="readBtn" onclick="readPrintedNumber()" disabled>
+    อ่านเลขใต้บาร์โค้ด
+  </button>
+
+  <div id="progress"></div>
+
+  <div class="section">
+    <label><b>เลขที่อ่านได้ (แก้ไขได้)</b></label>
+    <input id="codeInput" type="text" placeholder="ตัวอย่าง 51080-1">
+    <div class="small">
+      ระบบจะอ่านข้อความที่พิมพ์อยู่ใต้เส้นบาร์โค้ด
+      กรุณาตรวจสอบเลขก่อนบันทึก
     </div>
-
-    <button class="primary" id="startBtn">เปิดกล้องและเริ่มสแกน</button>
-    <button class="secondary" id="stopBtn">หยุดกล้อง</button>
-    <button class="secondary" id="registerBtn">ลงทะเบียนหรือแก้ไขเลข</button>
-
-    <div class="status" id="status">กดเปิดกล้องเพื่อเริ่มต้น</div>
   </div>
 
-  <div class="card">
-    <div class="small">ผลการอ่าน</div>
-    <div class="result" id="result">ยังไม่มีข้อมูล</div>
-    <div class="small" id="method" style="text-align:center">รอการสแกน</div>
-  </div>
+  <button class="primary" id="saveBtn" onclick="saveRecord()">
+    บันทึกลง Google Sheets
+  </button>
 
-  <div class="card">
-    <b>วิธีใช้งาน</b>
-    <p class="small">
-      1. เปิดกล้องและวางบาร์โค้ดในกรอบสีเขียว<br>
-      2. ระบบจะทดลองถอดรหัสบาร์โค้ด 1 มิติ<br>
-      3. หากไม่สามารถถอดรหัสได้ ให้กดลงทะเบียน<br>
-      4. กรอกเลขที่ต้องการผูกกับบาร์โค้ด<br>
-      5. ครั้งต่อไป ระบบจะพยายามจดจำภาพเดิม
-    </p>
-  </div>
-</main>
+  <button class="gray" onclick="stopCamera()">ปิดกล้อง</button>
 
-<dialog id="registerDialog">
-  <h3>ลงทะเบียนบาร์โค้ด</h3>
-  <p class="small">
-    วางบาร์โค้ดในกรอบกล้องให้นิ่ง แล้วกรอกเลขที่ต้องการผูก
-  </p>
-  <input id="codeInput" placeholder="เช่น 51080-1">
-  <button class="primary" id="saveBtn">บันทึกข้อมูล</button>
-  <button class="secondary" id="cancelBtn">ยกเลิก</button>
-</dialog>
+  <div class="status" id="status">สถานะ: พร้อมใช้งาน</div>
+</div>
+
+<canvas id="workCanvas" hidden></canvas>
 
 <script>
-"use strict";
-
-// ======================================
-// GOOGLE APPS SCRIPT
-// ======================================
-
 const API_URL = "https://script.google.com/macros/s/AKfycbwcfqP6idWEa6fOdv_bt33gHkiugkF5800sgDCKTGszfnl8womkvJL6n_7xoJcrRZgY/exec";
 
-const LOCAL_KEY = "BARCODE_MEMORY_V2";
-
-// ======================================
-// ELEMENTS
-// ======================================
-
 const video = document.getElementById("video");
-const statusBox = document.getElementById("status");
-const resultBox = document.getElementById("result");
-const methodBox = document.getElementById("method");
-const dialog = document.getElementById("registerDialog");
-const codeInput = document.getElementById("codeInput");
+const canvas = document.getElementById("workCanvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-let reader = null;
-let controls = null;
-let records = [];
-let latestFingerprint = "";
-let latestDecoded = "";
-let scanTimer = null;
+let cameraStream = null;
+let ocrWorker = null;
+let currentFingerprint = "";
 let busy = false;
-let lastRecognized = "";
 
-// ======================================
-// UI
-// ======================================
-
-function setStatus(message){
-  statusBox.textContent = message;
+function setStatus(message) {
+  document.getElementById("status").textContent = "สถานะ: " + message;
 }
 
-function showResult(value, method){
-  resultBox.textContent = value || "ไม่พบข้อมูล";
-  methodBox.textContent = method || "";
+function setProgress(message) {
+  document.getElementById("progress").textContent = message;
 }
 
-function showDecoded(value){
-  latestDecoded = value;
-  showResult(value, "ถอดรหัสบาร์โค้ดมาตรฐานสำเร็จ");
-  setStatus("อ่านบาร์โค้ดสำเร็จ");
+async function startCamera() {
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("เบราว์เซอร์ไม่รองรับกล้อง กรุณาเปิดผ่าน HTTPS ใน Safari");
+    }
+
+    stopCamera();
+
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      }
+    });
+
+    video.srcObject = cameraStream;
+    await video.play();
+
+    document.getElementById("readBtn").disabled = false;
+    setStatus("เปิดกล้องแล้ว จัดเลขใต้บาร์โค้ดให้อยู่ในกรอบ");
+  } catch (error) {
+    setStatus("เปิดกล้องไม่สำเร็จ: " + error.message);
+  }
 }
 
-// ======================================
-// JSONP CONNECTION
-// ======================================
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
 
-function jsonp(params){
-  return new Promise((resolve,reject)=>{
+  video.srcObject = null;
+  document.getElementById("readBtn").disabled = true;
+}
 
-    const callback = "barcode_cb_" +
-      Date.now() + "_" +
-      Math.floor(Math.random()*1000000);
+async function getOcrWorker() {
+  if (ocrWorker) return ocrWorker;
+
+  if (!window.Tesseract) {
+    throw new Error("โหลดระบบ OCR ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
+  }
+
+  setProgress("กำลังเตรียมระบบอ่านตัวหนังสือ...");
+
+  ocrWorker = await Tesseract.createWorker("eng");
+
+  await ocrWorker.setParameters({
+    tessedit_char_whitelist: "0123456789-",
+    tessedit_pageseg_mode: "7",
+    preserve_interword_spaces: "1"
+  });
+
+  return ocrWorker;
+}
+
+// ตัดภาพบริเวณใต้เส้นบาร์โค้ด
+function captureTextArea() {
+  if (!video.videoWidth || !video.videoHeight) {
+    throw new Error("กรุณาเปิดกล้องก่อน");
+  }
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  // อ่านแถบด้านล่างของภาพ ซึ่งเป็นตำแหน่งเลขกำกับบาร์โค้ด
+  const sx = Math.round(vw * 0.05);
+  const sy = Math.round(vh * 0.56);
+  const sw = Math.round(vw * 0.90);
+  const sh = Math.round(vh * 0.38);
+
+  canvas.width = sw * 3;
+  canvas.height = sh * 3;
+
+  ctx.filter = "grayscale(1) contrast(2)";
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  ctx.filter = "none";
+
+  return canvas;
+}
+
+// สร้างลายนิ้วมือภาพ 128 บิตสำหรับใช้จับคู่บาร์โค้ด
+function makeFingerprint(sourceCanvas) {
+  const temp = document.createElement("canvas");
+  temp.width = 16;
+  temp.height = 8;
+
+  const tctx = temp.getContext("2d", { willReadFrequently: true });
+  tctx.drawImage(sourceCanvas, 0, 0, 16, 8);
+
+  const pixels = tctx.getImageData(0, 0, 16, 8).data;
+  let total = 0;
+
+  for (let i = 0; i < 128; i++) {
+    total += pixels[i * 4];
+  }
+
+  const average = total / 128;
+  let bits = "";
+
+  for (let i = 0; i < 128; i++) {
+    bits += pixels[i * 4] >= average ? "1" : "0";
+  }
+
+  return bits;
+}
+
+async function readPrintedNumber() {
+  if (busy) return;
+
+  busy = true;
+  const readBtn = document.getElementById("readBtn");
+  readBtn.disabled = true;
+
+  try {
+    setStatus("กำลังอ่านเลขใต้บาร์โค้ด...");
+    setProgress("กำลังประมวลผลภาพ");
+
+    const imageCanvas = captureTextArea();
+    currentFingerprint = makeFingerprint(imageCanvas);
+
+    const worker = await getOcrWorker();
+
+    setProgress("กำลังอ่านข้อความ กรุณารอสักครู่...");
+
+    const result = await worker.recognize(imageCanvas);
+    const rawText = result.data.text || "";
+
+    // เก็บเฉพาะชุดตัวเลขและเครื่องหมายขีด
+    const matches = rawText.match(/[0-9]+(?:-[0-9]+)*/g) || [];
+
+    if (!matches.length) {
+      setStatus("ยังอ่านเลขไม่พบ ลองขยับกล้องให้ชัดและกดอ่านอีกครั้ง");
+      setProgress("ข้อความที่ OCR อ่านได้: " + rawText);
+      return;
+    }
+
+    // เลือกข้อความที่มีขีดก่อน หากไม่มีให้เลือกชุดตัวเลขที่ยาวที่สุด
+    const candidate =
+      matches.find(value => value.includes("-")) ||
+      matches.sort((a, b) => b.length - a.length)[0];
+
+    document.getElementById("codeInput").value = candidate;
+
+    const confidence = Math.round(result.data.confidence || 0);
+
+    setStatus("อ่านได้: " + candidate + " | ความมั่นใจ OCR " + confidence + "%");
+    setProgress("ตรวจสอบเลขให้ถูกต้องก่อนกดบันทึก");
+  } catch (error) {
+    setStatus("อ่านไม่สำเร็จ: " + error.message);
+  } finally {
+    busy = false;
+    readBtn.disabled = !cameraStream;
+  }
+}
+
+// ส่งคำขอแบบ JSONP เพื่อหลีกเลี่ยงปัญหา CORS
+function jsonp(params, timeoutMs = 25000) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "barcode_cb_" + Date.now() + "_" +
+      Math.floor(Math.random() * 100000);
 
     const script = document.createElement("script");
-    const url = new URL(API_URL);
-
-    Object.entries({...params,callback}).forEach(([key,value])=>{
-      url.searchParams.set(key,String(value));
+    const query = new URLSearchParams({
+      ...params,
+      callback: callbackName
     });
 
     let finished = false;
 
-    const timer = setTimeout(()=>{
-      finishError(new Error("หมดเวลารอ Google Apps Script"));
-    },25000);
+    const timer = setTimeout(() => {
+      finish();
+      reject(new Error("หมดเวลารอการตอบกลับจาก Google Sheets"));
+    }, timeoutMs);
 
-    function cleanup(){
+    function finish() {
+      if (finished) return;
+      finished = true;
       clearTimeout(timer);
-      delete window[callback];
+      delete window[callbackName];
       script.remove();
     }
 
-    function finishSuccess(data){
-      if(finished) return;
-      finished = true;
-      cleanup();
+    window[callbackName] = data => {
+      finish();
       resolve(data);
-    }
-
-    function finishError(error){
-      if(finished) return;
-      finished = true;
-      cleanup();
-      reject(error);
-    }
-
-    window[callback] = function(data){
-      finishSuccess(data);
     };
 
-    script.onerror = function(){
-      finishError(new Error("เชื่อมต่อ Google Apps Script ไม่สำเร็จ"));
+    script.onerror = () => {
+      finish();
+      reject(new Error("เชื่อมต่อ Google Apps Script ไม่สำเร็จ"));
     };
 
-    script.src = url.toString();
+    script.src = API_URL + "?" + query.toString();
     document.body.appendChild(script);
   });
 }
 
-// ======================================
-// LOAD RECORDS
-// ======================================
+async function saveRecord() {
+  if (busy) return;
 
-async function loadRecords(){
+  const code = document.getElementById("codeInput").value.trim();
 
-  try{
-    const data = await jsonp({action:"list"});
-
-    if(!data || !data.ok){
-      throw new Error(data?.error || "โหลดข้อมูลไม่ได้");
-    }
-
-    records = Array.isArray(data.records) ? data.records : [];
-
-    return true;
-
-  }catch(error){
-
-    try{
-      records = JSON.parse(
-        localStorage.getItem(LOCAL_KEY) || "[]"
-      );
-    }catch(e){
-      records = [];
-    }
-
-    setStatus("โหลดข้อมูลออนไลน์ไม่ได้: " + error.message);
-    return false;
-  }
-}
-
-// ======================================
-// CREATE BARCODE IMAGE FINGERPRINT
-// ใช้ภาพบริเวณกรอบสีเขียว
-// ======================================
-
-function createFingerprint(){
-
-  if(!video.videoWidth || !video.videoHeight) return "";
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 320;
-  canvas.height = 120;
-
-  const ctx = canvas.getContext("2d",{
-    willReadFrequently:true
-  });
-
-  ctx.drawImage(
-    video,
-    video.videoWidth * 0.04,
-    video.videoHeight * 0.34,
-    video.videoWidth * 0.92,
-    video.videoHeight * 0.32,
-    0,0,320,120
-  );
-
-  const pixels = ctx.getImageData(0,0,320,120).data;
-  const profile = [];
-
-  // อ่านความสว่างเฉลี่ยแต่ละแนวตั้ง
-  for(let x=0;x<320;x++){
-
-    let sum = 0;
-    let count = 0;
-
-    for(let y=4;y<116;y+=2){
-
-      const i = (y*320+x)*4;
-
-      const gray =
-        pixels[i]*0.299 +
-        pixels[i+1]*0.587 +
-        pixels[i+2]*0.114;
-
-      sum += gray;
-      count++;
-    }
-
-    profile.push(sum/count);
-  }
-
-  // หาค่าความสว่างเพื่อแบ่งเส้นดำและพื้นขาว
-  const sorted = [...profile].sort((a,b)=>a-b);
-
-  const low = sorted[64];
-  const high = sorted[255];
-
-  if(high-low < 18) return "";
-
-  const threshold = (low+high)/2;
-
-  const bits = profile.map(value=>
-    value < threshold ? 1 : 0
-  );
-
-  // ย่อเหลือ 128 บิต ให้ตรงกับ Code.gs เดิม
-  const output = [];
-
-  for(let i=0;i<128;i++){
-
-    const start = Math.floor(i*320/128);
-    const end = Math.floor((i+1)*320/128);
-
-    let total = 0;
-
-    for(let j=start;j<end;j++){
-      total += bits[j];
-    }
-
-    output.push(
-      total > (end-start)/2 ? "1" : "0"
-    );
-  }
-
-  return output.join("");
-}
-
-// ======================================
-// COMPARE FINGERPRINT
-// ======================================
-
-function similarity(a,b){
-
-  if(!a || !b || a.length!==b.length) return 0;
-
-  let same = 0;
-
-  for(let i=0;i<a.length;i++){
-    if(a[i]===b[i]) same++;
-  }
-
-  return same/a.length;
-}
-
-function findKnown(fp){
-
-  let best = null;
-  let bestScore = 0;
-  let secondScore = 0;
-
-  for(const item of records){
-
-    const score = similarity(
-      fp,
-      String(item.fingerprint || "")
-    );
-
-    if(score > bestScore){
-      secondScore = bestScore;
-      bestScore = score;
-      best = item;
-    }else if(score > secondScore){
-      secondScore = score;
-    }
-  }
-
-  if(
-    best &&
-    bestScore >= 0.94 &&
-    bestScore-secondScore >= 0.025
-  ){
-    return {
-      record:best,
-      score:bestScore
-    };
-  }
-
-  return null;
-}
-
-// ======================================
-// CHECK PREVIOUS BARCODE
-// ======================================
-
-function checkKnownBarcode(){
-
-  if(!video.videoWidth) return false;
-
-  const fp = createFingerprint();
-
-  if(!fp) return false;
-
-  const match = findKnown(fp);
-
-  if(match){
-
-    const key = match.record.fingerprint;
-
-    if(lastRecognized !== key){
-
-      lastRecognized = key;
-
-      latestFingerprint = fp;
-
-      showResult(
-        match.record.code,
-        "จดจำจากภาพที่ลงทะเบียนไว้ ("+
-        (match.score*100).toFixed(1)+"%)"
-      );
-
-      setStatus("พบข้อมูลบาร์โค้ดที่เคยลงทะเบียน");
-    }
-
-    return true;
-  }
-
-  lastRecognized = "";
-  return false;
-}
-
-// ======================================
-// CAMERA
-// ======================================
-
-async function startCamera(){
-
-  stopCamera(false);
-
-  if(!window.isSecureContext){
-    setStatus("กรุณาเปิดเว็บผ่าน HTTPS");
+  if (!code) {
+    setStatus("กรุณาอ่านหรือกรอกเลขบาร์โค้ดก่อน");
     return;
   }
 
-  if(!navigator.mediaDevices ||
-     !navigator.mediaDevices.getUserMedia){
-    setStatus("เบราว์เซอร์ไม่รองรับกล้อง กรุณาใช้ Safari");
-    return;
-  }
-
-  if(!window.ZXing ||
-     !window.ZXing.BrowserMultiFormatReader){
-
-    setStatus("โหลดระบบอ่านบาร์โค้ดไม่สำเร็จ กรุณารีเฟรชเว็บ");
-    return;
-  }
-
-  try{
-
-    setStatus("กำลังโหลดข้อมูลและเปิดกล้อง...");
-
-    await loadRecords();
-
-    const hints = new Map();
-
-    const formats = [
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.CODE_93,
-      ZXing.BarcodeFormat.CODABAR,
-      ZXing.BarcodeFormat.ITF,
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.RSS_14,
-      ZXing.BarcodeFormat.RSS_EXPANDED
-    ].filter(Boolean);
-
-    hints.set(
-      ZXing.DecodeHintType.POSSIBLE_FORMATS,
-      formats
-    );
-
-    hints.set(
-      ZXing.DecodeHintType.TRY_HARDER,
-      true
-    );
-
-    reader = new ZXing.BrowserMultiFormatReader(
-      hints,
-      250
-    );
-
-    controls = await reader.decodeFromVideoDevice(
-      undefined,
-      video,
-      (result,error)=>{
-
-        if(result && !busy){
-
-          const text = result.getText();
-
-          latestFingerprint = createFingerprint();
-
-          showDecoded(text);
-        }
-      }
-    );
-
-    setStatus("เปิดกล้องแล้ว วางบาร์โค้ดในกรอบสีเขียว");
-
-    // ตรวจสอบภาพที่เคยลงทะเบียนทุก 800 มิลลิวินาที
-    scanTimer = setInterval(()=>{
-
-      if(!busy && video.videoWidth){
-        checkKnownBarcode();
-      }
-
-    },800);
-
-  }catch(error){
-
-    let message = error.message || String(error);
-
-    if(error.name==="NotAllowedError"){
-      message = "ไม่ได้รับอนุญาตให้ใช้กล้อง กรุณาอนุญาต Camera";
-    }else if(error.name==="NotFoundError"){
-      message = "ไม่พบกล้องในอุปกรณ์";
-    }else if(error.name==="NotReadableError"){
-      message = "กล้องกำลังถูกใช้งานโดยแอปอื่น";
-    }
-
-    setStatus("เปิดกล้องไม่สำเร็จ: "+message);
-  }
-}
-
-// ======================================
-// STOP CAMERA
-// ======================================
-
-function stopCamera(showMessage=true){
-
-  if(scanTimer){
-    clearInterval(scanTimer);
-    scanTimer = null;
-  }
-
-  if(controls){
-    try{
-      controls.stop();
-    }catch(e){}
-    controls = null;
-  }
-
-  if(reader){
-    try{
-      reader.reset();
-    }catch(e){}
-    reader = null;
-  }
-
-  if(video.srcObject){
-    video.srcObject.getTracks().forEach(track=>track.stop());
-    video.srcObject = null;
-  }
-
-  lastRecognized = "";
-
-  if(showMessage){
-    setStatus("หยุดกล้องแล้ว");
-  }
-}
-
-// ======================================
-// REGISTER BARCODE
-// ======================================
-
-function openRegister(){
-
-  if(!video.videoWidth){
-    setStatus("กรุณาเปิดกล้องก่อนลงทะเบียน");
-    return;
-  }
-
-  latestFingerprint = createFingerprint();
-
-  if(!latestFingerprint){
-    setStatus("ภาพบาร์โค้ดไม่ชัด กรุณาจัดตำแหน่งใหม่");
-    return;
-  }
-
-  codeInput.value = latestDecoded || "";
-
-  if(!dialog.open){
-    dialog.showModal();
-  }
-}
-
-// ======================================
-// SAVE BARCODE
-// ======================================
-
-async function saveRecord(){
-
-  if(busy) return;
-
-  const code = codeInput.value.trim();
-
-  if(!code){
-    alert("กรุณากรอกเลขที่ต้องการ");
-    return;
-  }
-
-  latestFingerprint = createFingerprint() || latestFingerprint;
-
-  if(!latestFingerprint){
-    alert("ไม่พบภาพบาร์โค้ด กรุณาเปิดกล้องก่อน");
+  if (!currentFingerprint) {
+    setStatus("กรุณากดอ่านเลขใต้บาร์โค้ดก่อนบันทึก เพื่อเก็บข้อมูลภาพ");
     return;
   }
 
   busy = true;
-
   const saveBtn = document.getElementById("saveBtn");
   saveBtn.disabled = true;
-  saveBtn.textContent = "กำลังบันทึก...";
 
-  const record = {
-    code:code,
-    fingerprint:latestFingerprint,
-    updatedAt:new Date().toISOString()
-  };
+  try {
+    setStatus("กำลังส่งข้อมูลไป Google Sheets...");
 
-  try{
+    const result = await jsonp({
+      action: "save",
+      code: code,
+      fingerprint: currentFingerprint
+    });
 
-    let response;
-
-    try{
-
-      response = await jsonp({
-        action:"save",
-        code:code,
-        fingerprint:latestFingerprint
-      });
-
-    }catch(firstError){
-
-      // หากหมดเวลาหรือการเชื่อมต่อสะดุด
-      // ตรวจสอบในชีตก่อนสรุปว่าบันทึกไม่สำเร็จ
-      const check = await jsonp({action:"list"});
-
-      const found = (check.records || []).some(item=>
-        item.fingerprint === latestFingerprint &&
-        item.code === code
-      );
-
-      if(found){
-        response = {ok:true};
-      }else{
-        throw firstError;
-      }
+    if (!result || !result.ok) {
+      throw new Error(result && result.error
+        ? result.error
+        : "Google Sheets ไม่ยืนยันการบันทึก");
     }
 
-    if(!response || !response.ok){
-      throw new Error(response?.error || "บันทึกไม่สำเร็จ");
-    }
+    setStatus("บันทึกสำเร็จ: " + code);
+    setProgress("ส่งข้อมูลไป Google Sheets เรียบร้อยแล้ว");
 
-    // อัปเดตข้อมูลในหน้าเว็บ
-    const index = records.findIndex(item=>
-      item.fingerprint === latestFingerprint
-    );
-
-    if(index>=0){
-      records[index] = record;
-    }else{
-      records.push(record);
-    }
-
-    showResult(code,"บันทึกข้อมูลเรียบร้อยแล้ว");
-    setStatus("บันทึกข้อมูลลง Google Sheets สำเร็จ");
-    dialog.close();
-
-  }catch(error){
-
-    alert("บันทึกไม่สำเร็จ: "+error.message);
-
-    setStatus(
-      "ไม่สามารถยืนยันผลการบันทึกได้: "+error.message
-    );
-
-  }finally{
-
+  } catch (error) {
+    setStatus("ยังยืนยันการบันทึกไม่ได้: " + error.message);
+    setProgress("ตรวจสอบแท็บ BarcodeMemory ใน Google Sheets ก่อนลองบันทึกซ้ำ");
+  } finally {
     busy = false;
     saveBtn.disabled = false;
-    saveBtn.textContent = "บันทึกข้อมูล";
   }
 }
-
-// ======================================
-// EVENTS
-// ======================================
-
-document.getElementById("startBtn")
-  .addEventListener("click",startCamera);
-
-document.getElementById("stopBtn")
-  .addEventListener("click",()=>stopCamera(true));
-
-document.getElementById("registerBtn")
-  .addEventListener("click",openRegister);
-
-document.getElementById("saveBtn")
-  .addEventListener("click",saveRecord);
-
-document.getElementById("cancelBtn")
-  .addEventListener("click",()=>dialog.close());
-
-// ======================================
-// INITIAL
-// ======================================
-
-loadRecords();
-
 </script>
 </body>
 </html>
