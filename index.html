@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barcode OCR Scanner</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f5fa;
+  padding: 20px;
+  color: #182033;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+h2 { text-align: center; }
+
+button, .upload {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  margin-top: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #5145e5;
+  color: white;
+}
+
+.upload {
+  display: block;
+  text-align: center;
+  background: #eeeeff;
+  color: #352bb7;
+}
+
+input[type=file] { display: none; }
+
+video, img {
+  width: 100%;
+  margin-top: 15px;
+  border-radius: 10px;
+}
+
+#result {
+  background: #f0faf2;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 15px;
+  overflow-wrap: anywhere;
+}
+
+#code {
+  width: 100%;
+  padding: 14px;
+  font-size: 24px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Barcode OCR Scanner</h2>
+
+<p>อ่านตัวเลขใต้บาร์โค้ดจากภาพ</p>
+
+<button onclick="startCamera()">เปิดกล้อง</button>
+
+<video id="video" autoplay playsinline
+style="display:none"></video>
+
+<button onclick="capture()">ถ่ายภาพ</button>
+
+<canvas id="canvas" hidden></canvas>
+
+<label class="upload" for="photo">
+เลือกรูปภาพจาก iPhone
+</label>
+
+<input type="file" id="photo"
+accept="image/*" capture="environment">
+
+<p id="status">พร้อมใช้งาน</p>
+
+<div id="result">
+
+<strong>รหัสสินค้าที่อ่านได้</strong>
+
+<input id="code" placeholder="เช่น 51080-1">
+
+<p id="raw"></p>
+
+</div>
+
+<button onclick="copyCode()">คัดลอกรหัส</button>
+
+<button onclick="clearData()">ล้างข้อมูล</button>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+
+let stream = null;
+
+async function startCamera() {
+
+  try {
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
+
+    video.srcObject = stream;
+    video.style.display = "block";
+
+    document.getElementById("status").innerText =
+      "เปิดกล้องแล้ว จัดตำแหน่งตัวเลขให้ชัดเจน";
+
+  } catch (error) {
+
+    alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตใช้กล้องและเปิดผ่าน HTTPS");
+
+  }
+
+}
+
+async function capture() {
+
+  if (!video.videoWidth) {
+    alert("กรุณาเปิดกล้องก่อน");
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas.getContext("2d").drawImage(
+    video, 0, 0
+  );
+
+  readOCR(canvas);
+
+}
+
+document.getElementById("photo").addEventListener(
+  "change", function(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    const img = new Image();
+
+    img.onload = function() {
+      readOCR(img);
+      URL.revokeObjectURL(img.src);
+    };
+
+    img.src = URL.createObjectURL(file);
+
+  }
+);
+
+async function readOCR(image) {
+
+  const status = document.getElementById("status");
+
+  status.innerText = "กำลังอ่านตัวเลข...";
+
+  try {
+
+    const worker = await Tesseract.createWorker("eng");
+
+    const result = await worker.recognize(image);
+
+    await worker.terminate();
+
+    const text = result.data.text.trim();
+
+    document.getElementById("raw").innerText =
+      "ข้อความทั้งหมด:\n" + text;
+
+    // ค้นหารหัสรูปแบบ 51080-1
+    const match = text.match(
+      /[A-Z0-9]{3,}[-–][A-Z0-9]+/i
+    );
+
+    if (match) {
+
+      document.getElementById("code").value =
+        match[0].replace("–", "-");
+
+      status.innerText = "อ่านรหัสสำเร็จ";
+
+    } else {
+
+      status.innerText =
+        "อ่านภาพแล้ว แต่ไม่พบรหัสอัตโนมัติ";
+
+    }
+
+  } catch(error) {
+
+    status.innerText = "เกิดข้อผิดพลาด: " + error.message;
+
+  }
+
+}
+
+async function copyCode() {
+
+  const code = document.getElementById("code").value;
+
+  if (!code) {
+    alert("ไม่มีรหัสให้คัดลอก");
+    return;
+  }
+
+  await navigator.clipboard.writeText(code);
+
+  alert("คัดลอกรหัสแล้ว: " + code);
+
+}
+
+function clearData() {
+
+  document.getElementById("code").value = "";
+  document.getElementById("raw").innerText = "";
+  document.getElementById("status").innerText = "พร้อมสแกนใหม่";
+
+}
+
+window.addEventListener("pagehide", () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+});
+
+</script>
+
+</body>
+</html>
