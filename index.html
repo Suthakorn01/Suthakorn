@@ -1025,7 +1025,7 @@
       <button type="button" class="btn" id="setTest">ทดสอบการเชื่อมต่อ</button>
       <button type="submit" class="btn primary">บันทึก</button>
     </div>
-    <p class="set-foot">ยังไม่มี URL? ดูขั้นตอนติดตั้งในแดชบอร์ด หรือ <button type="button" class="linkish" id="copyGas2">คัดลอกโค้ด Apps Script</button></p>
+    <p class="set-foot"><button type="button" class="linkish" id="setLink">คัดลอกลิงก์ตั้งค่าสำหรับเครื่องอื่น</button> · ยังไม่มี URL? ดูขั้นตอนในแดชบอร์ด หรือ <button type="button" class="linkish" id="copyGas2">คัดลอกโค้ด Apps Script</button></p>
   </form>
 </div>
 
@@ -2089,7 +2089,8 @@ function readLinks_() {
       if (e && e.name === 'AbortError') throw apiError('Google Sheet ตอบช้าเกินไป ลองใหม่อีกครั้ง', 'network');
       throw apiError(inFrame()
         ? 'หน้านี้เชื่อม Google Sheet ไม่ได้ เพราะเปิดอยู่ในกรอบของเว็บอื่น — เปิดจากลิงก์ GitHub Pages'
-        : (navigator.onLine === false ? 'ไม่มีอินเทอร์เน็ต' : 'เชื่อมต่อ Google Sheet ไม่ได้ — ตรวจ URL ของเว็บแอป และอินเทอร์เน็ต'), 'network');
+        : (navigator.onLine === false ? 'ไม่มีอินเทอร์เน็ต'
+          : 'Google ปฏิเสธการเชื่อมต่อก่อนถึงสคริปต์ — ตรวจว่า Deploy เป็น "เว็บแอป", ผู้มีสิทธิ์เข้าถึงเป็น "ทุกคน (Anyone)", URL ลงท้ายด้วย /exec และกดอนุญาตสิทธิ์ครบแล้ว'), 'network');
     } finally { clearTimeout(tm); }
     var txt = await res.text(), data;
     try { data = JSON.parse(txt); }
@@ -2700,6 +2701,13 @@ function readLinks_() {
       st.textContent = '✓ เชื่อมต่อได้: ' + d.file + ' · แท็บ "' + d.sheet + '" · พบ ' + num(d.items) + ' รายการ';
     }).catch(function (e) {
       st.className = 'set-status err'; st.textContent = '✗ ' + e.message;
+      if (e.code === 'network' || e.code === 'format') {
+        // let the user see the raw answer from Google in a normal tab
+        var test = cfg.url + (cfg.url.indexOf('?') === -1 ? '?' : '&') + 'action=ping&key=' + encodeURIComponent(cfg.key);
+        st.appendChild(h('br'));
+        st.appendChild(h('a', { href: test, target: '_blank', rel: 'noopener', class: 'linkish', text: 'เปิดลิงก์ทดสอบในแท็บใหม่' }));
+        st.appendChild(document.createTextNode(' เพื่อดูว่าสคริปต์ตอบอะไรกลับมา'));
+      }
     }).then(function () { b.disabled = false; });
   });
   $('#setForm').addEventListener('submit', function (e) {
@@ -2838,6 +2846,45 @@ function readLinks_() {
   document.addEventListener('visibilitychange', function () { if (!document.hidden && configured() && Date.now() - sheet.at > 30000) loadItems(); });
   setInterval(function () { if (!document.hidden && configured() && !qtyCur && Date.now() - sheet.at > 60000) loadItems(); }, 15000);
   if (typeof ZXing === 'undefined') setStatus('โหลดตัวถอดรหัสหลักไม่สำเร็จ — จะใช้ได้เฉพาะตัวอ่าน Code 128 แบบพิเศษ');
+  // one-tap setup link: …/#setup=<base64url {u: url, k: key, b: name}>, never stored in the repo
+  function encSetup(o) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function decSetup(t) {
+    t = t.replace(/-/g, '+').replace(/_/g, '/');
+    while (t.length % 4) t += '=';
+    return JSON.parse(decodeURIComponent(escape(atob(t))));
+  }
+  function importSetup() {
+    var m = /^#setup=([A-Za-z0-9_-]+)$/.exec(location.hash || ''), done = false;
+    if (!m) return false;
+    try {
+      var o = decSetup(m[1]);
+      if (o && typeof o.u === 'string' && /^(https:\/\/|http:\/\/127\.0\.0\.1)/.test(o.u) && typeof o.k === 'string' && o.k) {
+        if (o.u !== settings.sheetUrl) { sheet.items = []; sheet.links = {}; sheet.at = 0; }
+        settings.sheetUrl = o.u; settings.sheetKey = o.k;
+        if (typeof o.b === 'string' && o.b) settings.by = o.b;
+        persist(); done = true;
+        setTimeout(function () { toast('ตั้งค่าการเชื่อมต่อจากลิงก์แล้ว', 'none'); }, 400);
+      }
+    } catch (e) { }
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+    return done;
+  }
+  importSetup();
+  // the link may also be opened while the app is already showing (same tab, hash change only)
+  window.addEventListener('hashchange', function () { if (importSetup()) { renderDash(); loadItems(); } });
+  $('#setLink').addEventListener('click', function (e) {
+    var cfg = formCfg(), st = $('#setStatus');
+    if (!cfg.url || !cfg.key) { st.className = 'set-status err'; st.textContent = 'ใส่ URL และรหัสก่อน แล้วค่อยสร้างลิงก์'; return; }
+    var o = { u: cfg.url, k: cfg.key };
+    var by = $('#setBy').value.trim();
+    if (by) o.b = by;
+    copyText(location.origin + location.pathname + '#setup=' + encSetup(o), e.currentTarget);
+    st.className = 'set-status'; st.textContent = 'คัดลอกลิงก์แล้ว — เปิดลิงก์นี้บนเครื่องอื่นเพื่อตั้งค่าทันที (ลิงก์มีรหัสอยู่ ส่งเฉพาะคนที่ใช้งาน)';
+  });
+  window.__encSetup = encSetup;
+
   renderDash();
   if (configured()) loadItems();
 
